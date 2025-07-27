@@ -1,0 +1,47 @@
+{
+  "name": "pure-autosize",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "A declarative, framework-agnostic library for automatically resizing textareas that survives DOM morphing operations",
+  "main": "src/pure-autosize.js",
+  "module": "src/pure-autosize.js",
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "test": "web-test-runner",
+    "test:watch": "web-test-runner --watch",
+    "test:chrome": "web-test-runner --playwright --browsers chromium",
+    "test:chromium": "web-test-runner --playwright --browsers chromium",
+    "test:firefox": "web-test-runner --concurrency 1 --playwright --browsers firefox",
+    "test:webkit": "web-test-runner --playwright --browsers webkit",
+    "test:all": "web-test-runner --concurrency 1 --playwright --browsers chromium firefox webkit",
+    "test:coverage": "npm run test:chrome",
+    "test:ci": "npm run test:all -- --fail-only"
+  },
+  "keywords": [
+    "textarea",
+    "autosize",
+    "autoresize",
+    "morphing",
+    "turbo",
+    "idiomorph",
+    "declarative",
+    "framework-agnostic"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "devDependencies": {
+    "@esm-bundle/chai": "^4.3.4",
+    "@web/test-runner": "^0.18.0",
+    "@web/test-runner-playwright": "^0.11.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/botandrose/pure-autosize.git"
+  },
+  "bugs": {
+    "url": "https://github.com/botandrose/pure-autosize/issues"
+  },
+  "homepage": "https://github.com/botandrose/pure-autosize#readme"
+}
