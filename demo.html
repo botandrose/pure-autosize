@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pure Autosize Demo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            color: #333;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            border-bottom: 3px solid #3498db;
+            padding-bottom: 10px;
+        }
+        
+        h2 {
+            color: #34495e;
+            margin-top: 40px;
+            margin-bottom: 15px;
+        }
+        
+        .demo-section {
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 1px solid #e1e8ed;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        .demo-section h3 {
+            margin-top: 0;
+            color: #2c3e50;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 60px;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            line-height: 1.4;
+            resize: vertical;
+            transition: border-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .max-height-demo textarea {
+            max-height: 120px;
+        }
+        
+        
+        .form-demo {
+            display: flex;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        button {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background: #2980b9;
+        }
+        
+        button.secondary {
+            background: #95a5a6;
+        }
+        
+        button.secondary:hover {
+            background: #7f8c8d;
+        }
+        
+        .lazy-demo {
+            height: 150vh;
+            border: 2px dashed #bdc3c7;
+            padding: 20px;
+            margin: 20px 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .code-block {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Consolas', monospace;
+            font-size: 13px;
+            overflow-x: auto;
+            margin: 10px 0;
+        }
+        
+        .info-box {
+            background: #e8f4fd;
+            border: 1px solid #bee5eb;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .info-box.warning {
+            background: #fff3cd;
+            border-color: #ffeaa7;
+        }
+        
+        .feature-list {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .feature-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .feature-list li:before {
+            content: "✓ ";
+            color: #27ae60;
+            font-weight: bold;
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Pure Autosize Demo</h1>
+    
+    <p>A declarative, framework-agnostic library for automatically resizing textareas that survives DOM morphing operations.</p>
+    
+    <ul class="feature-list">
+        <li><strong>Zero DOM mutations</strong> - Uses Constructed Stylesheets</li>
+        <li><strong>Morphing-resistant</strong> - Survives Turbo, idiomorph, and other DOM morphing</li>
+        <li><strong>Declarative API</strong> - Simple <code>autosize</code> attribute</li>
+        <li><strong>Lazy loading</strong> - Optional performance optimization</li>
+        <li><strong>Framework-agnostic</strong> - Works with any framework or vanilla JS</li>
+    </ul>
+
+    <div class="demo-section">
+        <h3>Basic Autosize</h3>
+        <p>Simple textarea that automatically resizes as you type:</p>
+        <div class="code-block">&lt;textarea autosize&gt;&lt;/textarea&gt;</div>
+        <textarea autosize>Start typing here... This textarea will automatically grow as you add more text.
+
+Try adding multiple lines to see the autosize behavior in action!</textarea>
+    </div>
+
+    <div class="demo-section">
+        <h3>With Max Height Constraint</h3>
+        <p>This textarea has a max-height of 120px and will show scrollbars when exceeded:</p>
+        <div class="code-block">&lt;textarea autosize style="max-height: 120px;"&gt;&lt;/textarea&gt;</div>
+        <div class="max-height-demo">
+            <textarea autosize>This textarea has a max-height constraint. Keep typing to see what happens when the content exceeds the maximum height...
+
+Try adding many lines:
+Line 1
+Line 2
+Line 3
+Line 4
+Line 5
+Line 6
+Line 7
+Line 8
+Line 9
+Line 10</textarea>
+        </div>
+    </div>
+
+
+    <div class="demo-section">
+        <h3>Form Integration</h3>
+        <p>Demonstrates how autosize works with forms and programmatic value changes:</p>
+        
+        <form id="demoForm">
+            <textarea autosize name="message">This textarea is part of a form. Try the buttons below to see programmatic changes...
+
+You can also type here to add your own content.</textarea>
+            
+            <div class="form-demo">
+                <button type="button" onclick="setLongText()">Set Long Text</button>
+                <button type="button" onclick="clearText()">Clear Text</button>
+                <button type="reset" class="secondary">Reset Form</button>
+            </div>
+        </form>
+        
+        <div class="info-box">
+            <strong>Note:</strong> The autosize library automatically detects programmatic value changes and form resets, adjusting the height accordingly.
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h3>Dynamic Element Addition</h3>
+        <p>Test how autosize handles dynamically added elements:</p>
+        
+        <div id="dynamicContainer"></div>
+        
+        <div class="form-demo">
+            <button type="button" onclick="addTextarea()">Add New Textarea</button>
+            <button type="button" onclick="removeTextarea()" class="secondary">Remove Last Textarea</button>
+        </div>
+        
+        <div class="info-box">
+            <strong>Note:</strong> New textareas with the <code>autosize</code> attribute are automatically detected and initialized using MutationObserver.
+        </div>
+    </div>
+
+    <div class="lazy-demo">
+        <h3>Lazy Loading Demo</h3>
+        <p>Scroll down to see the lazy-loaded textarea below...</p>
+        <p>⬇️ Keep scrolling ⬇️</p>
+    </div>
+
+    <div class="demo-section">
+        <h3>Lazy Loading</h3>
+        <p>This textarea uses lazy loading - it only initializes when it becomes visible:</p>
+        <div class="code-block">&lt;textarea autosize="lazy"&gt;&lt;/textarea&gt;</div>
+        <textarea autosize="lazy">This textarea was lazy-loaded! It only initialized when you scrolled it into view, which can improve performance for pages with many textareas.
+
+Continue typing to test the lazy-loaded autosize functionality.</textarea>
+        
+        <div class="info-box warning">
+            <strong>Performance Tip:</strong> Use <code>autosize="lazy"</code> for textareas that might not be immediately visible to improve initial page load performance.
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h3>Window Resize Handling</h3>
+        <p>This textarea demonstrates how autosize responds to window resizing:</p>
+        <textarea autosize>Try resizing your browser window while this textarea has content. The height will be recalculated automatically to maintain proper sizing.
+
+Add some content here and then resize your browser window to see the automatic height adjustment in action!</textarea>
+        
+        <div class="info-box">
+            <strong>Note:</strong> Autosize automatically recalculates heights when the window is resized, ensuring proper display across different viewport sizes.
+        </div>
+    </div>
+
+    <div class="demo-section">
+        <h3>Pre-filled Content</h3>
+        <p>Textareas with existing content are automatically sized on initialization:</p>
+        <textarea autosize>This textarea already has content when the page loads.
+
+The autosize library automatically calculates the correct height based on the existing content during initialization.
+
+You can continue adding more text and it will grow accordingly!</textarea>
+    </div>
+
+    <script src="src/pure-autosize.js"></script>
+    
+    <script>
+        let textareaCounter = 0;
+        
+        function setLongText() {
+            const textarea = document.querySelector('form textarea[name="message"]');
+            textarea.value = `This is a longer text that demonstrates how the textarea automatically adjusts its height when content is set programmatically.
+
+Line 1: Lorem ipsum dolor sit amet, consectetur adipiscing elit.
+Line 2: Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.
+Line 3: Ut enim ad minim veniam, quis nostrud exercitation ullamco.
+Line 4: Duis aute irure dolor in reprehenderit in voluptate velit esse.
+Line 5: Excepteur sint occaecat cupidatat non proident, sunt in culpa.
+
+The autosize library detects this programmatic change and adjusts the height automatically!`;
+        }
+        
+        function clearText() {
+            const textarea = document.querySelector('form textarea[name="message"]');
+            textarea.value = '';
+        }
+        
+        function addTextarea() {
+            const container = document.getElementById('dynamicContainer');
+            const textarea = document.createElement('textarea');
+            textarea.setAttribute('autosize', '');
+            textarea.value = `Dynamic textarea #${++textareaCounter} - This was added dynamically and autosize was automatically applied!
+
+Type here to test the autosize functionality on dynamically added elements.`;
+            textarea.style.marginBottom = '10px';
+            container.appendChild(textarea);
+        }
+        
+        function removeTextarea() {
+            const container = document.getElementById('dynamicContainer');
+            const lastTextarea = container.lastElementChild;
+            if (lastTextarea) {
+                container.removeChild(lastTextarea);
+            }
+        }
+        
+        // Add some demo content after page load
+        window.addEventListener('load', () => {
+            // Add initial dynamic textarea
+            addTextarea();
+        });
+    </script>
+</body>
+</html>
