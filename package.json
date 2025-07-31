@@ -1,6 +1,6 @@
 {
   "name": "pure-autosize",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "A declarative, framework-agnostic library for automatically resizing textareas that survives DOM morphing operations",
   "main": "src/pure-autosize.js",
