@@ -4,22 +4,28 @@ import { expect } from '@esm-bundle/chai'
  * Retry utility for async assertions
  * Retries an assertion function until it passes or times out
  */
-export async function retryAssertion(assertionFn, timeout = 2000, interval = 50) {
+export async function retryAssertion(assertionFn, timeout = 200, interval = 10) {
   const startTime = Date.now()
+  let lastError = null
 
   while (Date.now() - startTime < timeout) {
     try {
       await assertionFn()
       return; // Success!
     } catch (error) {
-      // If we've exceeded the timeout, throw the last error
-      if (Date.now() - startTime >= timeout) {
-        throw error
-      }
-      // Otherwise wait and try again
+      lastError = error
+      // Wait before trying again
       await new Promise(resolve => setTimeout(resolve, interval))
     }
   }
+
+  // If we exit the loop, we've timed out - throw the last error
+  if (lastError) {
+    throw lastError
+  }
+
+  // This should never happen, but just in case
+  throw new Error('Assertion timed out without any attempts')
 }
 
 

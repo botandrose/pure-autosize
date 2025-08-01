@@ -15,107 +15,122 @@
  * - Lazy loading support for performance
  */
 
-class AutosizeManager {
+class AutosizeRegistry {
   constructor() {
     this.lazyLoader = new LazyLoader()
-    this.textareaControllers = new Map()
+    this.controllers = new Map()
     this.windowResizeHandler = new WindowResizeHandler(this)
     this.formResetHandler = new FormResetHandler(this)
-    this.initialized = false
+    this.cssQueryObserver = new CSSQueryObserver('textarea[autosize]', {
+      onAdded: this.add.bind(this),
+      onRemoved: this.remove.bind(this)
+    })
   }
 
-  createController(textarea) {
-    this.textareaControllers.set(textarea, new TextareaController(textarea))
-  }
+  add(textarea) {
+    if (this.controllers.has(textarea)) return
 
-  updateController(textarea) {
-    this.textareaControllers.get(textarea)?.update()
-  }
-
-  updateAllControllers() {
-    this.textareaControllers.forEach(controller => controller.update())
-  }
-
-  destroyController(textarea) {
-    const controller = this.textareaControllers.get(textarea)
-    if (controller) {
-      controller.destroy()
-      this.textareaControllers.delete(textarea)
+    if (textarea.getAttribute('autosize') === 'lazy') {
+      this.lazyLoader.setup(textarea, () => {
+        this.controllers.set(textarea, new Controller(textarea))
+      })
+    } else {
+      this.controllers.set(textarea, new Controller(textarea))
     }
   }
 
-  init() {
-    if (this.initialized) return
-    this.initialized = true
+  remove(textarea) {
+    this.controllers.get(textarea)?.destroy()
+    this.controllers.delete(textarea)
+    this.lazyLoader.cleanup(textarea)
+  }
 
-    this.#processExistingTextareas()
+  update(textarea, options = {}) {
+    if (textarea) {
+      this.controllers.get(textarea)?.update(options)
+    } else {
+      this.controllers.forEach(c => c.update(options))
+    }
+  }
+}
+
+class CSSQueryObserver {
+  constructor(selector, { onAdded, onRemoved }) {
+    this.selector = selector
+    this.onAdded = onAdded
+    this.onRemoved = onRemoved
+    this.observer = null
+    this.attributeNames = this.#parseAttributeNames(selector)
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => this.#init())
+    } else {
+      this.#init()
+    }
+  }
+
+  #init() {
+    this.#processExistingElements()
     this.#setupMutationObserver()
   }
 
-  #processExistingTextareas() {
-    const textareas = document.querySelectorAll('textarea[autosize]')
-    textareas.forEach(textarea => this.#processTextarea(textarea))
+  #parseAttributeNames(selector) {
+    // Extract attribute names from selector like "textarea[autosize]" or "div[data-foo][bar]"
+    const matches = selector.match(/\[([^\]]+)\]/g)
+    if (!matches) return []
+
+    return matches.map(match => {
+      // Remove brackets and extract just the attribute name (before = if present)
+      const attr = match.slice(1, -1)
+      return attr.split('=')[0]
+    })
+  }
+
+  #processExistingElements() {
+    const elements = document.querySelectorAll(this.selector)
+    elements.forEach(element => this.onAdded(element))
   }
 
   #setupMutationObserver() {
-    const observer = new MutationObserver(mutations => {
+    this.observer = new MutationObserver(mutations => {
       mutations.forEach(mutation => {
-        mutation.addedNodes.forEach(node => this.#processNode(node, textarea => this.#processTextarea(textarea)))
-        mutation.removedNodes.forEach(node => this.#processNode(node, textarea => this.#cleanupTextarea(textarea)))
+        mutation.addedNodes.forEach(node => this.#processNode(node, this.onAdded))
+        mutation.removedNodes.forEach(node => this.#processNode(node, this.onRemoved))
 
-        if (mutation.type === 'attributes' && mutation.attributeName === 'autosize') {
+        if (mutation.type === "attributes") {
           const target = mutation.target
-          if (target.hasAttribute('autosize')) {
-            this.#processTextarea(target)
+          if (target.matches?.(this.selector)) {
+            this.onAdded(target)
           } else {
-            this.#cleanupTextarea(target)
+            this.onRemoved(target)
           }
         }
       })
     })
 
-    observer.observe(document.body, {
+    this.observer.observe(document.body, {
       childList: true,
       subtree: true,
-      attributes: true,
-      attributeFilter: ['autosize']
+      attributes: this.attributeNames.length > 0,
+      attributeFilter: this.attributeNames.length > 0 ? this.attributeNames : undefined
     })
   }
 
   #processNode(node, callback) {
     if (node.nodeType === Node.ELEMENT_NODE) {
-      if (node.matches && node.matches('textarea[autosize]')) {
+      if (node.matches?.(this.selector)) {
         callback(node)
       }
-      const textareas = node.querySelectorAll && node.querySelectorAll('textarea[autosize]')
-      if (textareas) {
-        textareas.forEach(callback)
+      const matchingChildren = node.querySelectorAll?.(this.selector)
+      if (matchingChildren) {
+        matchingChildren.forEach(callback)
       }
     }
   }
 
-  #processTextarea(textarea) {
-    if (textarea.getAttribute('autosize') === 'lazy') {
-      this.lazyLoader.setup(textarea, () => {
-        this.#initializeTextarea(textarea)
-      })
-    } else {
-      this.#initializeTextarea(textarea)
-    }
-  }
-
-  #initializeTextarea(textarea) {
-    if (this.textareaControllers.has(textarea)) return
-
-    this.createController(textarea)
-  }
-
-  #cleanupTextarea(textarea) {
-    if (this.textareaControllers.has(textarea)) {
-      this.destroyController(textarea)
-    }
-
-    this.lazyLoader.cleanup(textarea)
+  destroy() {
+    this.observer?.disconnect()
+    this.observer = null
   }
 }
 
@@ -124,41 +139,38 @@ class LazyLoader {
     this.observers = new Map()
   }
 
-  setup(textarea, onVisible) {
+  setup(element, onVisible) {
     const observer = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           onVisible()
-          this.cleanup(textarea)
+          this.cleanup(element)
         }
       })
     }, { rootMargin: '50px' })
 
-    observer.observe(textarea)
-    this.observers.set(textarea, observer)
+    observer.observe(element)
+    this.observers.set(element, observer)
   }
 
-  cleanup(textarea) {
-    const observer = this.observers.get(textarea)
-    if (observer) {
-      observer.disconnect()
-      this.observers.delete(textarea)
-    }
+  cleanup(element) {
+    this.observers.get(element)?.disconnect()
+    this.observers.delete(element)
   }
 }
 
-class TextareaController {
+class Controller {
   constructor(textarea) {
     this.textarea = textarea
     this.stylesheetManager = new StylesheetManager(textarea)
-    this.heightCalculator = new HeightCalculator(textarea, this.stylesheetManager)
+    this.textareaResizer = new TextareaResizer(textarea, this.stylesheetManager)
     this.inputHandler = new InputHandler(textarea, this)
     this.valueSetter = new ValueSetter(textarea, this)
-    this.heightCalculator.update()
+    this.update()
   }
 
-  update(options = { testForHeightReduction: true }) {
-    this.heightCalculator.update(options)
+  update(options = {}) {
+    this.textareaResizer.update(options)
   }
 
   destroy() {
@@ -168,29 +180,30 @@ class TextareaController {
   }
 }
 
-class HeightCalculator {
+
+class TextareaResizer {
   constructor(textarea, stylesheetManager) {
     this.textarea = textarea
     this.stylesheetManager = stylesheetManager
   }
 
   update(options = {}) {
-    const { testForHeightReduction = true } = options
-    const computedStyle = window.getComputedStyle(this.textarea)
-    const initialOverflowY = computedStyle.overflowY
-
-    if (this.textarea.scrollHeight === 0) return
-
-    let restoreScrollPositions
-    if (testForHeightReduction) {
-      restoreScrollPositions = this.#cacheScrollPositions(this.textarea)
-      this.stylesheetManager.setRules('')
+    if (this.textarea.scrollHeight === 0 || this.textarea.value === '') {
+      this.stylesheetManager.reset()
+      return
     }
 
-    let newHeight = this.#calculateHeight(this.textarea, computedStyle)
-    let overflowRule = ''
+    // Only clear CSS for accurate measurement if height might reduce (expensive operation)
+    if (this.#willReduceHeight(options.previousValue)) {
+      // Temporarily clear our CSS rules to get accurate scrollHeight for the current content
+      this.stylesheetManager.reset()
+    }
+
+    const computedStyle = window.getComputedStyle(this.textarea)
+    let newHeight = this.#calculateHeightFromScrollHeight(this.textarea.scrollHeight, computedStyle)
 
     // Handle max-height constraint
+    let overflowRule = ''
     if (computedStyle.maxHeight !== 'none' && newHeight > parseFloat(computedStyle.maxHeight)) {
       if (computedStyle.overflowY === 'hidden') {
         overflowRule = 'overflow: scroll !important;'
@@ -200,46 +213,30 @@ class HeightCalculator {
       overflowRule = 'overflow: hidden !important;'
     }
 
-    // Construct complete CSS rules
-    const baseRules = `height: ${newHeight}px !important; overflow-x: hidden !important; word-wrap: break-word !important;`
-    const allRules = [baseRules, overflowRule].filter(Boolean).join(' ')
-    
-    this.stylesheetManager.setRules(allRules)
-
-    if (restoreScrollPositions) {
-      restoreScrollPositions()
-    }
+    const css = `
+      height: ${newHeight}px !important;
+      overflow-x: hidden !important;
+      word-wrap: break-word !important;
+      ${overflowRule}
+    `
+    this.stylesheetManager.replace(css);
   }
 
-
-  #cacheScrollPositions(element) {
-    const positions = []
-    let current = element.parentNode
-
-    while (current && current instanceof Element) {
-      if (current.scrollTop) {
-        positions.push([current, current.scrollTop])
-      }
-      current = current.parentNode
-    }
-
-    return () => {
-      positions.forEach(([node, scrollTop]) => {
-        node.style.scrollBehavior = 'auto'
-        node.scrollTop = scrollTop
-        node.style.scrollBehavior = null
-      })
-    }
+  #willReduceHeight(previousValue) {
+    const value = this.textarea.value
+    if (!previousValue) return false
+    if (value.startsWith(previousValue)) return false
+    return true
   }
 
-  #calculateHeight(textarea, computedStyle) {
+  #calculateHeightFromScrollHeight(scrollHeight, computedStyle) {
     if (computedStyle.boxSizing === 'content-box') {
-      return textarea.scrollHeight - (
+      return scrollHeight - (
         parseFloat(computedStyle.paddingTop) +
         parseFloat(computedStyle.paddingBottom)
       )
     } else {
-      return textarea.scrollHeight +
+      return scrollHeight +
         parseFloat(computedStyle.borderTopWidth) +
         parseFloat(computedStyle.borderBottomWidth)
     }
@@ -256,7 +253,7 @@ class WindowResizeHandler {
   #onResize = () => {
     clearTimeout(this.resizeTimeout)
     this.resizeTimeout = setTimeout(() => {
-      this.manager.updateAllControllers()
+      this.manager.update()
     }, 100)
   }
 }
@@ -270,9 +267,11 @@ class FormResetHandler {
   #onReset = (event) => {
     const textareas = event.target.querySelectorAll('textarea[autosize]')
     textareas.forEach(textarea => {
+      const previousValue = textarea.value
       setTimeout(() => {
-        this.manager.updateController(textarea)
-      }, 0)
+        // For form resets, we know the textarea will change to its default value
+        this.manager.update(textarea, { previousValue })
+      }, 1)
     })
   }
 }
@@ -287,7 +286,7 @@ class InputHandler {
 
   #onInput = () => {
     this.controller.update({
-      testForHeightReduction: this.previousValue === '' || !this.textarea.value.startsWith(this.previousValue),
+      previousValue: this.previousValue
     })
     this.previousValue = this.textarea.value
   }
@@ -315,10 +314,10 @@ class ValueSetter {
     Object.defineProperty(this.textarea, 'value', {
       get: originalGetter,
       set: function(newValue) {
-        const oldValue = originalGetter.call(this)
+        const previousValue = originalGetter.call(this)
         originalSetter.call(this, newValue)
-        if (oldValue !== newValue) {
-          setTimeout(() => controller.update(), 0)
+        if (previousValue !== newValue) {
+          setTimeout(() => controller.update({ previousValue }), 0)
         }
       },
       configurable: true
@@ -348,7 +347,11 @@ class StylesheetManager {
     document.adoptedStyleSheets = [...document.adoptedStyleSheets, this.stylesheet]
   }
 
-  setRules(cssRules = '') {
+  reset() {
+    this.replace()
+  }
+
+  replace(cssRules = '') {
     if (cssRules === '') {
       this.stylesheet.replaceSync('')
     } else {
@@ -364,9 +367,4 @@ class StylesheetManager {
   }
 }
 
-const autosizeManager = new AutosizeManager()
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => autosizeManager.init())
-} else {
-  autosizeManager.init()
-}
+window.autosizeRegistry = new AutosizeRegistry()
