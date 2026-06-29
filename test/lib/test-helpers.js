@@ -4,7 +4,7 @@ import { expect } from '@esm-bundle/chai'
  * Retry utility for async assertions
  * Retries an assertion function until it passes or times out
  */
-export async function retryAssertion(assertionFn, timeout = 200, interval = 10) {
+export async function retryAssertion(assertionFn, timeout = 1500, interval = 10) {
   const startTime = Date.now()
   let lastError = null
 

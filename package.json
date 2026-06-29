@@ -14,7 +14,7 @@
     "test:chrome": "web-test-runner --playwright --browsers chromium",
     "test:chromium": "web-test-runner --playwright --browsers chromium",
     "test:firefox": "web-test-runner --concurrency 1 --playwright --browsers firefox",
-    "test:webkit": "web-test-runner --playwright --browsers webkit",
+    "test:webkit": "web-test-runner --concurrency 1 --playwright --browsers webkit",
     "test:all": "web-test-runner --concurrency 1 --playwright --browsers chromium firefox webkit",
     "test:coverage": "npm run test:chrome",
     "test:ci": "npm run test:all -- --fail-only"
