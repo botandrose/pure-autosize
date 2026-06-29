@@ -193,6 +193,9 @@ class TextareaResizer {
       return
     }
 
+    // Resizing reflows scrollable ancestors, clamping their scrollTop.
+    const restoreScrollPositions = this.#cacheScrollPositions(this.textarea)
+
     // Only clear CSS for accurate measurement if height might reduce (expensive operation)
     if (this.#willReduceHeight(options.previousValue)) {
       // Temporarily clear our CSS rules to get accurate scrollHeight for the current content
@@ -220,6 +223,25 @@ class TextareaResizer {
       ${overflowRule}
     `
     this.stylesheetManager.replace(css);
+
+    restoreScrollPositions()
+  }
+
+  #cacheScrollPositions(element) {
+    const positions = []
+    let current = element
+    while (current && current.parentNode && current.parentNode instanceof Element) {
+      if (current.parentNode.scrollTop) {
+        positions.push([current.parentNode, current.parentNode.scrollTop])
+      }
+      current = current.parentNode
+    }
+    // scrollTop only: writing inline styles here would break morph-safety.
+    return () => {
+      positions.forEach(([node, scrollTop]) => {
+        node.scrollTop = scrollTop
+      })
+    }
   }
 
   #willReduceHeight(previousValue) {
